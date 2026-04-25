@@ -23,11 +23,14 @@ def save_sent(data):
 
 
 def send_telegram_message(text):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    requests.post(url, data={
+     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
+    response = requests.post(url, data={
         "chat_id": CHAT_ID,
         "text": text
     })
+
+    print(response.text)
 
 
 def is_delisting(title):
