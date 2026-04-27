@@ -33,46 +33,43 @@ def send_telegram_message(text):
     print(response.text)
 
 
-def is_delisting(title):
-    keywords = [
+def is_real_delisting(title):
+    title = title.lower()
+
+    good_words = [
         "delist",
         "delisting",
         "remove",
         "removed",
-        "trading pairs will be removed",
-        "spot trading will be suspended"
+        "trading pair delisting",
+        "spot delisting",
+        "notice regarding the early delisting",
+        "delisting information"
     ]
 
-    title_lower = title.lower()
-    return any(word in title_lower for word in keywords)
+    bad_words = [
+        "futures",
+        "perpetual",
+        "maintenance",
+        "margin",
+        "launchpool",
+        "campaign",
+        "promo",
+        "bonus",
+        "earn",
+        "apr"
+    ]
 
+    if any(word in title for word in bad_words):
+        return False
 
-def check_binance():
-    url = "https://www.binance.com/en/support/announcement/c-48"
-    r = requests.get(url, timeout=20)
-    soup = BeautifulSoup(r.text, "html.parser")
-
-    results = []
-
-    for a in soup.find_all("a", href=True):
-        title = a.get_text(strip=True)
-        link = a["href"]
-
-        if len(title) < 10:
-            continue
-
-        if is_delisting(title):
-            if not link.startswith("http"):
-                link = "https://www.binance.com" + link
-
-            results.append(("BINANCE", title, link))
-
-    return results
+    return any(word in title for word in good_words)
 
 
 def check_bybit():
-    url = "https://announcements.bybit.com/en-US/"
-    r = requests.get(url, timeout=20)
+    url = "https://announcements.bybit.com/en/?category=delistings&page=1"
+
+    r = requests.get(url, timeout=30)
     soup = BeautifulSoup(r.text, "html.parser")
 
     results = []
@@ -84,18 +81,19 @@ def check_bybit():
         if len(title) < 10:
             continue
 
-        if is_delisting(title):
+        if is_real_delisting(title):
             if not link.startswith("http"):
                 link = "https://announcements.bybit.com" + link
 
             results.append(("BYBIT", title, link))
 
-    return results
+    return results[:5]
 
 
 def check_bitget():
-    url = "https://www.bitget.com/support/articles"
-    r = requests.get(url, timeout=20)
+    url = "https://www.bitget.com/support/sections/12508313443290"
+
+    r = requests.get(url, timeout=30)
     soup = BeautifulSoup(r.text, "html.parser")
 
     results = []
@@ -107,17 +105,40 @@ def check_bitget():
         if len(title) < 10:
             continue
 
-        if is_delisting(title):
+        if is_real_delisting(title):
             if not link.startswith("http"):
                 link = "https://www.bitget.com" + link
 
             results.append(("BITGET", title, link))
 
-    return results
+    return results[:5]
+
+
+def check_binance():
+    url = "https://www.binance.com/en/support/announcement/list/161"
+
+    r = requests.get(url, timeout=30)
+    soup = BeautifulSoup(r.text, "html.parser")
+
+    results = []
+
+    for a in soup.find_all("a", href=True):
+        title = a.get_text(strip=True)
+        link = a["href"]
+
+        if len(title) < 10:
+            continue
+
+        if is_real_delisting(title):
+            if not link.startswith("http"):
+                link = "https://www.binance.com" + link
+
+            results.append(("BINANCE", title, link))
+
+    return results[:5]
 
 
 def main():
-  
     sent = load_sent()
 
     all_news = []
@@ -132,13 +153,21 @@ def main():
             continue
 
         message = f"""
-{exchange} DELISTING ALERT
+🚨 {exchange} DELISTING ALERT
 
 {title}
 
 {link}
 """
 
+        send_telegram_message(message)
+        sent.add(unique_id)
+
+    save_sent(sent)
+
+
+if __name__ == "__main__":
+    main()
         send_telegram_message(message)
         sent.add(unique_id)
 
