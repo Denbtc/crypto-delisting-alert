@@ -1,3 +1,4 @@
+```python
 import requests
 import os
 import json
@@ -44,7 +45,8 @@ def is_real_delisting(title):
         "trading pair delisting",
         "spot delisting",
         "notice regarding the early delisting",
-        "delisting information"
+        "delisting information",
+        "token delisting"
     ]
 
     bad_words = [
@@ -57,7 +59,9 @@ def is_real_delisting(title):
         "promo",
         "bonus",
         "earn",
-        "apr"
+        "apr",
+        "staking",
+        "reward"
     ]
 
     if any(word in title for word in bad_words):
@@ -67,72 +71,104 @@ def is_real_delisting(title):
 
 
 def check_bybit():
-    url = "https://announcements.bybit.com/en/?category=delistings&page=1"
-    r = requests.get(url, timeout=30)
-    soup = BeautifulSoup(r.text, "html.parser")
+    url = "https://api.bybit.com/v5/announcements/index"
+
+    params = {
+        "locale": "en-US",
+        "type": "delistings",
+        "page": 1,
+        "limit": 10
+    }
 
     results = []
 
-    for a in soup.find_all("a", href=True):
-        title = a.get_text(strip=True)
-        link = a["href"]
+    try:
+        r = requests.get(url, params=params, timeout=30)
+        data = r.json()
 
-        if len(title) < 10:
-            continue
+        if "result" not in data:
+            return results
 
-        if is_real_delisting(title):
-            if not link.startswith("http"):
-                link = "https://announcements.bybit.com" + link
+        items = data["result"].get("list", [])
 
-            results.append(("BYBIT", title, link))
+        for item in items:
+            title = item.get("title", "")
+            link = item.get("url", "")
 
-    return results[:5]
+            if not title:
+                continue
+
+            if is_real_delisting(title):
+                results.append(("BYBIT", title, link))
+
+    except Exception as e:
+        print("BYBIT ERROR:", e)
+
+    return results[:10]
 
 
 def check_bitget():
-    url = "https://www.bitget.com/support/sections/12508313443290"
-    r = requests.get(url, timeout=30)
-    soup = BeautifulSoup(r.text, "html.parser")
+    url = "https://api.bitget.com/api/v2/public/annoucements"
+
+    params = {
+        "language": "en_US",
+        "annType": "symbol_delisting",
+        "limit": "10"
+    }
 
     results = []
 
-    for a in soup.find_all("a", href=True):
-        title = a.get_text(strip=True)
-        link = a["href"]
+    try:
+        r = requests.get(url, params=params, timeout=30)
+        data = r.json()
 
-        if len(title) < 10:
-            continue
+        if data.get("code") != "00000":
+            return results
 
-        if is_real_delisting(title):
-            if not link.startswith("http"):
-                link = "https://www.bitget.com" + link
+        items = data.get("data", [])
 
-            results.append(("BITGET", title, link))
+        for item in items:
+            title = item.get("annTitle", "")
+            link = item.get("annUrl", "")
 
-    return results[:5]
+            if not title:
+                continue
+
+            if is_real_delisting(title):
+                results.append(("BITGET", title, link))
+
+    except Exception as e:
+        print("BITGET ERROR:", e)
+
+    return results[:10]
 
 
 def check_binance():
     url = "https://www.binance.com/en/support/announcement/list/161"
-    r = requests.get(url, timeout=30)
-    soup = BeautifulSoup(r.text, "html.parser")
 
     results = []
 
-    for a in soup.find_all("a", href=True):
-        title = a.get_text(strip=True)
-        link = a["href"]
+    try:
+        r = requests.get(url, timeout=30)
+        soup = BeautifulSoup(r.text, "html.parser")
 
-        if len(title) < 10:
-            continue
+        for a in soup.find_all("a", href=True):
+            title = a.get_text(strip=True)
+            link = a["href"]
 
-        if is_real_delisting(title):
-            if not link.startswith("http"):
-                link = "https://www.binance.com" + link
+            if len(title) < 10:
+                continue
 
-            results.append(("BINANCE", title, link))
+            if is_real_delisting(title):
+                if not link.startswith("http"):
+                    link = "https://www.binance.com" + link
 
-    return results[:5]
+                results.append(("BINANCE", title, link))
+
+    except Exception as e:
+        print("BINANCE ERROR:", e)
+
+    return results[:10]
 
 
 def main():
@@ -142,7 +178,9 @@ def main():
     all_news.extend(check_binance())
     all_news.extend(check_bybit())
     all_news.extend(check_bitget())
+
     print(all_news)
+
     for exchange, title, link in all_news:
         unique_id = f"{exchange}_{title}"
 
@@ -165,3 +203,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
+
