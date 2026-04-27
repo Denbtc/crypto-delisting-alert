@@ -147,12 +147,12 @@ def main():
     all_news.extend(check_bitget())
 
     for exchange, title, link in all_news:
-        unique_id = f"{exchange}_{title}"
+    unique_id = f"{exchange}_{title}"
 
-        if unique_id in sent:
-            continue
+    if unique_id in sent:
+        continue
 
-        message = f"""
+    message = f"""
 🚨 {exchange} DELISTING ALERT
 
 {title}
@@ -160,8 +160,8 @@ def main():
 {link}
 """
 
-        send_telegram_message(message)
-        sent.add(unique_id)
+    send_telegram_message(message)
+    sent.add(unique_id)
 
     save_sent(sent)
 
