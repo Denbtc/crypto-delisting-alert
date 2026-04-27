@@ -25,10 +25,14 @@ def save_sent(data):
 def send_telegram_message(text):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
-    response = requests.post(url, data={
-        "chat_id": CHAT_ID,
-        "text": text
-    })
+    response = requests.post(
+        url,
+        data={
+            "chat_id": CHAT_ID,
+            "text": text
+        },
+        timeout=30
+    )
 
     print(response.text)
 
@@ -43,9 +47,8 @@ def is_real_delisting(title):
         "removed",
         "trading pair delisting",
         "spot delisting",
-        "notice regarding the early delisting",
-        "delisting information",
-        "token delisting"
+        "token delisting",
+        "delisting information"
     ]
 
     bad_words = [
@@ -70,7 +73,6 @@ def is_real_delisting(title):
 
 
 def check_bybit():
-    def check_bybit():
     url = "https://announcements.bybit.com/en/?category=delistings&page=1"
 
     results = []
@@ -80,8 +82,13 @@ def check_bybit():
             "User-Agent": "Mozilla/5.0"
         }
 
-        r = requests.get(url, headers=headers, timeout=30)
-        soup = BeautifulSoup(r.text, "html.parser")
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=30
+        )
+
+        soup = BeautifulSoup(response.text, "html.parser")
 
         for a in soup.find_all("a", href=True):
             title = a.get_text(strip=True)
@@ -97,43 +104,44 @@ def check_bybit():
                 results.append(("BYBIT", title, link))
 
     except Exception as e:
-        print("BYBIT ERROR:", e)
+        print("BYBIT ERROR:", str(e))
 
     return results[:10]
 
 
 def check_bitget():
-    url = "https://api.bitget.com/api/v2/public/annoucements"
-
-    params = {
-        "language": "en_US",
-        "annType": "symbol_delisting",
-        "limit": "10"
-    }
+    url = "https://www.bitget.com/support/sections/12508313443290"
 
     results = []
 
     try:
-        r = requests.get(url, params=params, timeout=30)
-        data = r.json()
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
 
-        if data.get("code") != "00000":
-            return results
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=30
+        )
 
-        items = data.get("data", [])
+        soup = BeautifulSoup(response.text, "html.parser")
 
-        for item in items:
-            title = item.get("annTitle", "")
-            link = item.get("annUrl", "")
+        for a in soup.find_all("a", href=True):
+            title = a.get_text(strip=True)
+            link = a.get("href", "")
 
-            if not title:
+            if len(title) < 10:
                 continue
 
             if is_real_delisting(title):
+                if not link.startswith("http"):
+                    link = "https://www.bitget.com" + link
+
                 results.append(("BITGET", title, link))
 
     except Exception as e:
-        print("BITGET ERROR:", e)
+        print("BITGET ERROR:", str(e))
 
     return results[:10]
 
@@ -144,12 +152,21 @@ def check_binance():
     results = []
 
     try:
-        r = requests.get(url, timeout=30)
-        soup = BeautifulSoup(r.text, "html.parser")
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
+
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=30
+        )
+
+        soup = BeautifulSoup(response.text, "html.parser")
 
         for a in soup.find_all("a", href=True):
             title = a.get_text(strip=True)
-            link = a["href"]
+            link = a.get("href", "")
 
             if len(title) < 10:
                 continue
@@ -161,7 +178,7 @@ def check_binance():
                 results.append(("BINANCE", title, link))
 
     except Exception as e:
-        print("BINANCE ERROR:", e)
+        print("BINANCE ERROR:", str(e))
 
     return results[:10]
 
@@ -182,8 +199,7 @@ def main():
         if unique_id in sent:
             continue
 
-        message = f"""
-🚨 {exchange} DELISTING ALERT
+        message = f"""🚨 {exchange} DELISTING ALERT
 
 {title}
 
@@ -198,5 +214,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
