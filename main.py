@@ -142,7 +142,7 @@ def main():
     all_news.extend(check_binance())
     all_news.extend(check_bybit())
     all_news.extend(check_bitget())
-
+    print(all_news)
     for exchange, title, link in all_news:
         unique_id = f"{exchange}_{title}"
 
