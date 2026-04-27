@@ -68,7 +68,6 @@ def is_real_delisting(title):
 
 def check_bybit():
     url = "https://announcements.bybit.com/en/?category=delistings&page=1"
-
     r = requests.get(url, timeout=30)
     soup = BeautifulSoup(r.text, "html.parser")
 
@@ -92,7 +91,6 @@ def check_bybit():
 
 def check_bitget():
     url = "https://www.bitget.com/support/sections/12508313443290"
-
     r = requests.get(url, timeout=30)
     soup = BeautifulSoup(r.text, "html.parser")
 
@@ -116,7 +114,6 @@ def check_bitget():
 
 def check_binance():
     url = "https://www.binance.com/en/support/announcement/list/161"
-
     r = requests.get(url, timeout=30)
     soup = BeautifulSoup(r.text, "html.parser")
 
@@ -160,14 +157,6 @@ def main():
 {link}
 """
 
-        send_telegram_message(message)
-        sent.add(unique_id)
-
-    save_sent(sent)
-
-
-if __name__ == "__main__":
-    main()
         send_telegram_message(message)
         sent.add(unique_id)
 
