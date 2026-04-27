@@ -117,7 +117,7 @@ def check_bitget():
 
 
 def main():
-    send_telegram_message("TEST MESSAGE: bot works")
+  
     sent = load_sent()
 
     all_news = []
