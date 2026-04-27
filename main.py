@@ -70,34 +70,30 @@ def is_real_delisting(title):
 
 
 def check_bybit():
-    url = "https://api.bybit.com/v5/announcements/index"
-
-    params = {
-        "locale": "en-US",
-        "type": "delistings",
-        "page": 1,
-        "limit": 10
-    }
+    def check_bybit():
+    url = "https://announcements.bybit.com/en/?category=delistings&page=1"
 
     results = []
 
     try:
-        r = requests.get(url, params=params, timeout=30)
-        data = r.json()
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
 
-        if "result" not in data:
-            return results
+        r = requests.get(url, headers=headers, timeout=30)
+        soup = BeautifulSoup(r.text, "html.parser")
 
-        items = data["result"].get("list", [])
+        for a in soup.find_all("a", href=True):
+            title = a.get_text(strip=True)
+            link = a.get("href", "")
 
-        for item in items:
-            title = item.get("title", "")
-            link = item.get("url", "")
-
-            if not title:
+            if len(title) < 10:
                 continue
 
             if is_real_delisting(title):
+                if not link.startswith("http"):
+                    link = "https://announcements.bybit.com" + link
+
                 results.append(("BYBIT", title, link))
 
     except Exception as e:
